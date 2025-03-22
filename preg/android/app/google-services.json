@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "912118387533",
+    "project_id": "pregnancy-app-back-b96d4",
+    "storage_bucket": "pregnancy-app-back-b96d4.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:912118387533:android:7ee17aeca7c06f50329d04",
+        "android_client_info": {
+          "package_name": "com.example.preg"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDRToCMCsNIoajvjWcNB-GIlFC4SrG70vU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:912118387533:android:d3acfe15aa3bc1cd329d04",
+        "android_client_info": {
+          "package_name": "com.example.pregnancy"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDRToCMCsNIoajvjWcNB-GIlFC4SrG70vU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

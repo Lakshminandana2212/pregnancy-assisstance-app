@@ -24,18 +24,17 @@ class _LoginScreenState extends State<LoginScreen> {
 
       try {
         // Authenticate user with Firebase Auth
-        UserCredential userCredential = await FirebaseAuth.instance.signInWithEmailAndPassword(
-          email: _emailController.text.trim(),
-          password: _passwordController.text.trim(),
-        );
+        UserCredential userCredential = await FirebaseAuth.instance
+            .signInWithEmailAndPassword(
+              email: _emailController.text.trim(),
+              password: _passwordController.text.trim(),
+            );
 
         String uid = userCredential.user!.uid;
 
         // Fetch user details from Firestore
-        DocumentSnapshot userDoc = await FirebaseFirestore.instance
-            .collection('users')
-            .doc(uid)
-            .get();
+        DocumentSnapshot userDoc =
+            await FirebaseFirestore.instance.collection('users').doc(uid).get();
 
         if (userDoc.exists) {
           print("User Data: ${userDoc.data()}");
@@ -45,12 +44,11 @@ class _LoginScreenState extends State<LoginScreen> {
 
         // Navigate to Dashboard after successful login
         Navigator.pushReplacementNamed(context, '/dashboard');
-
       } on FirebaseAuthException catch (e) {
         print("Error: ${e.message}");
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Login failed: ${e.message}")),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text("Login failed: ${e.message}")));
       } catch (e) {
         print("Error: $e");
         ScaffoldMessenger.of(context).showSnackBar(
@@ -102,7 +100,9 @@ class _LoginScreenState extends State<LoginScreen> {
                   labelText: "Password",
                   suffixIcon: IconButton(
                     icon: Icon(
-                      _isPasswordVisible ? Icons.visibility : Icons.visibility_off,
+                      _isPasswordVisible
+                          ? Icons.visibility
+                          : Icons.visibility_off,
                     ),
                     onPressed: () {
                       setState(() {
@@ -124,15 +124,12 @@ class _LoginScreenState extends State<LoginScreen> {
               // Login Button
               _isLoading
                   ? CircularProgressIndicator()
-                  : ElevatedButton(
-                      onPressed: _login,
-                      child: Text("Login"),
-                    ),
+                  : ElevatedButton(onPressed: _login, child: Text("Login")),
 
               // Sign Up Button
               TextButton(
                 onPressed: () {
-                  Navigator.pushNamed(context, '/signup');
+                  Navigator.pushNamed(context, '/signup_decision');
                 },
                 child: Text("Don't have an account? Sign Up"),
               ),

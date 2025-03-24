@@ -11,7 +11,7 @@ plugins {
 android {
     namespace = "com.example.preg"
     compileSdk = 34
-    ndkVersion = "27.2.12479018"
+    ndkVersion = "29.0.13113456"
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11

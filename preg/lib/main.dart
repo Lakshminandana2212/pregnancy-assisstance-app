@@ -1,19 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'screens/login_screen.dart'; // Import LoginScreen
-import 'screens/signup_decision.dart'; // Import SignupDecisionScreen
-import 'screens/signup_preg.dart'; // Import SignupScreen for Pregnant Women
-import 'screens/signup_family.dart'; // Import SignupScreen for Family Members
-import 'screens/dashboard.dart'; // Import DashboardScreen
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:preg/screens/dashboard.dart';
+import 'package:preg/screens/signup_preg.dart';
+import 'package:preg/screens/login_screen.dart';
+import 'package:preg/screens/chatbot_screen.dart';
+import 'package:preg/screens/doctors.dart';
+import 'package:preg/screens/pregnancy_info.dart';
+import 'package:preg/screens/signup_decision.dart';
+import 'package:preg/screens/signup_family.dart';
 
 void main() async {
-  // Ensure Flutter binding is initialized
   WidgetsFlutterBinding.ensureInitialized();
-
-  // Initialize Firebase
   await Firebase.initializeApp();
 
-  // Run the app
   runApp(MyApp());
 }
 
@@ -21,28 +21,39 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      debugShowCheckedModeBanner: false, // Remove debug banner
-      title: 'Pregnancy Assistance App',
-      theme: ThemeData(
-        primarySwatch: Colors.blue, // Set primary color
-        visualDensity: VisualDensity.adaptivePlatformDensity,
-      ),
-      initialRoute: '/login', // Set initial route
+      debugShowCheckedModeBanner: false,
+      title: 'PregnaCare',
+      theme: ThemeData(primarySwatch: Colors.pink),
+      home: AuthWrapper(),
       routes: {
-        '/login': (context) => LoginScreen(), // Login Screen
-        '/signup_decision':
-            (context) => SignupDecisionScreen(), // Signup Decision Screen
-        '/signup_preg':
-            (context) => SignupScreen(), // Signup Screen for Pregnant Women
-        '/signup_family':
-            (context) =>
-                FamilySignupScreen(), // Signup Screen for Family Members
-        '/dashboard': (context) {
-          // Retrieve the lastPeriodDate from the arguments
-          final DateTime lastPeriodDate =
-              ModalRoute.of(context)!.settings.arguments as DateTime;
-          return DashboardScreen(lastPeriodDate: lastPeriodDate);
-        },
+        '/dashboard': (context) => DashboardScreen(),
+        '/signup_preg': (context) => SignupScreen(),
+        '/login': (context) => LoginScreen(),
+        '/chatbot': (context) => ChatbotScreen(),
+        '/doctors': (context) => DoctorListScreen(),
+        '/signup_decision' : (context) => SignupDecisionScreen(),
+         '/signup_family' : (context) => FamilySignupScreen(),
+        '/pregnancy_info': (context) => PregnancyInfoScreen(),
+      },
+    );
+  }
+}
+
+class AuthWrapper extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return StreamBuilder<User?>(
+      stream: FirebaseAuth.instance.authStateChanges(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.active) {
+          User? user = snapshot.data;
+          if (user == null) {
+            return LoginScreen();
+          } else {
+            return LoginScreen();
+          }
+        }
+        return Scaffold(body: Center(child: CircularProgressIndicator()));
       },
     );
   }

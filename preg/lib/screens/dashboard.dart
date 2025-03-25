@@ -1,153 +1,117 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:preg/screens/doctors.dart';
+import 'package:preg/screens/pregnancy_info.dart';
 
-class DashboardScreen extends StatelessWidget {
-  final DateTime lastPeriodDate; // Pass the lastPeriodDate from the previous screen
+class DashboardScreen extends StatefulWidget {
+  const DashboardScreen({super.key});
 
-  DashboardScreen({required this.lastPeriodDate});
+  @override
+  _DashboardScreenState createState() => _DashboardScreenState();
+}
 
-  // Function to calculate pregnancy weeks
-  int calculatePregnancyWeeks(DateTime lastPeriodDate) {
-    DateTime now = DateTime.now();
-    int weeks = now.difference(lastPeriodDate).inDays ~/ 7;
-    return weeks;
+class _DashboardScreenState extends State<DashboardScreen> {
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  String _userType = '';
+  int _weeksPregnant = 0;
+  DateTime? _dueDate;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchUserData();
   }
 
-  // Function to calculate due date
-  DateTime calculateDueDate(DateTime lastPeriodDate) {
-    return lastPeriodDate.add(Duration(days: 280)); // 40 weeks
+  Future<void> _fetchUserData() async {
+    User? user = _auth.currentUser;
+    if (user != null) {
+      DocumentSnapshot userDoc =
+          await _firestore.collection('users').doc(user.uid).get();
+
+      if (userDoc.exists) {
+        setState(() {
+          _userType = userDoc['userType'];
+
+          if (_userType == 'pregnant_woman' && userDoc.data() != null) {
+            var userData = userDoc.data() as Map<String, dynamic>;
+
+            // Ensure last_period_date exists before using it
+            if (userData.containsKey('last_period_date')) {
+              Timestamp lastPeriodTimestamp = userData['last_period_date'];
+              DateTime lastPeriodDate = lastPeriodTimestamp.toDate();
+              _weeksPregnant =
+                  DateTime.now().difference(lastPeriodDate).inDays ~/ 7;
+            }
+
+            // Ensure due_date exists before using it
+            if (userData.containsKey('due_date')) {
+              _dueDate = userData['due_date'].toDate();
+            }
+          }
+        });
+      }
+    }
   }
 
-  // Function to fetch pregnancy info
-  Future<Map<String, dynamic>> getPregnancyInfo(int week) async {
-    var snapshot = await FirebaseFirestore.instance
-        .collection('pregnancy_info')
-        .where('week', isEqualTo: week)
+  Future<void> _sendEmergencyAlert() async {
+    User? user = _auth.currentUser;
+    if (user == null) return;
+
+    QuerySnapshot familyMembers = await _firestore
+        .collection('users')
+        .where('userType', isEqualTo: 'family_member')
+        .where('linkedEmail', isEqualTo: user.email)
         .get();
 
-    if (snapshot.docs.isNotEmpty) {
-      return snapshot.docs.first.data();
-    } else {
-      throw Exception("No data found for week $week");
+    for (var doc in familyMembers.docs) {
+      print("Sending alert to: ${doc['email']}");
     }
+  }
+
+  void _navigateToDoctorList() {
+    Navigator.push(
+        context, MaterialPageRoute(builder: (context) => DoctorListScreen()));
+  }
+
+  void _navigateToChatbot() {
+    Navigator.pushNamed(context, '/chatbot');
+  }
+
+  void _navigateToPregnancyInfo() {
+    Navigator.push(
+        context, MaterialPageRoute(builder: (context) => PregnancyInfoScreen()));
   }
 
   @override
   Widget build(BuildContext context) {
-    int currentWeek = calculatePregnancyWeeks(lastPeriodDate);
-    DateTime dueDate = calculateDueDate(lastPeriodDate);
-
     return Scaffold(
-      appBar: AppBar(
-        title: Text("Dashboard"),
-      ),
+      appBar: AppBar(title: Text("Dashboard")),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
-        child: FutureBuilder<Map<String, dynamic>>(
-          future: getPregnancyInfo(currentWeek),
-          builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              return Center(child: CircularProgressIndicator());
-            } else if (snapshot.hasError) {
-              return Center(child: Text("Error: ${snapshot.error}"));
-            } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-              return Center(child: Text("No data available for this week."));
-            } else {
-              var pregnancyInfo = snapshot.data!;
-              return SingleChildScrollView(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Pregnancy Progress
-                    Card(
-                      child: Padding(
-                        padding: const EdgeInsets.all(16.0),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              "Pregnancy Progress",
-                              style: TextStyle(
-                                fontSize: 20,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            SizedBox(height: 10),
-                            LinearProgressIndicator(
-                              value: currentWeek / 40, // 40 weeks total
-                              backgroundColor: Colors.grey[200],
-                              valueColor: AlwaysStoppedAnimation<Color>(Colors.blue),
-                            ),
-                            SizedBox(height: 10),
-                            Text(
-                              "Week $currentWeek of 40",
-                              style: TextStyle(fontSize: 16),
-                            ),
-                            Text(
-                              "Due Date: ${dueDate.toLocal().toString().split(' ')[0]}",
-                              style: TextStyle(fontSize: 16),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-
-                    SizedBox(height: 20),
-
-                    // Weekly Info
-                    Card(
-                      child: Padding(
-                        padding: const EdgeInsets.all(16.0),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              "Week $currentWeek",
-                              style: TextStyle(
-                                fontSize: 20,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            SizedBox(height: 10),
-                            Text(
-                              pregnancyInfo['info'],
-                              style: TextStyle(fontSize: 16),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-
-                    SizedBox(height: 20),
-
-                    // Weekly Tips
-                    Card(
-                      child: Padding(
-                        padding: const EdgeInsets.all(16.0),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              "Tips for This Week",
-                              style: TextStyle(
-                                fontSize: 20,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            SizedBox(height: 10),
-                            Text(
-                              pregnancyInfo['tips'],
-                              style: TextStyle(fontSize: 16),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              );
-            }
-          },
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (_userType == 'pregnant_woman') ...[
+              Text("You are $_weeksPregnant weeks pregnant",
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              Text("Due Date: ${_dueDate?.toLocal().toString().split(' ')[0]}",
+                  style: TextStyle(fontSize: 16)),
+              SizedBox(height: 20),
+            ],
+            ElevatedButton(
+                onPressed: _sendEmergencyAlert, child: Text("Emergency Alert")),
+            ElevatedButton(
+                onPressed: _navigateToDoctorList,
+                child: Text("Online Doctor Consultation")),
+            ElevatedButton(
+                onPressed: _navigateToChatbot,
+                child: Text("Symptom Tracker & Chatbot")),
+            ElevatedButton(
+                onPressed: _navigateToPregnancyInfo,
+                child: Text("Know Your Due Date & Info")),
+          ],
         ),
       ),
     );

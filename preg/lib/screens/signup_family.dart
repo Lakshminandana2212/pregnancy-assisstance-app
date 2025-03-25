@@ -15,56 +15,60 @@ class _FamilySignupScreenState extends State<FamilySignupScreen> {
   final _phoneController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
-  final _pregnantUsernameController = TextEditingController();
+  final _pregnantEmailController = TextEditingController();
 
   Future<void> _signUp() async {
     if (_formKey.currentState!.validate()) {
       try {
         // Fetch the pregnant woman's user ID using her username
-        var snapshot = await FirebaseFirestore.instance
-            .collection('users')
-            .where('username', isEqualTo: _pregnantUsernameController.text.trim())
-            .get();
+        var snapshot =
+            await FirebaseFirestore.instance
+                .collection('users')
+                .where('email', isEqualTo: _pregnantEmailController.text.trim())
+                .get();
 
         if (snapshot.docs.isEmpty) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text("Pregnant woman not found")),
-          );
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text("Pregnant woman not found")));
           return;
         }
 
         String pregnantUserId = snapshot.docs.first.id;
 
         // Create a Firebase Authentication account for the family member
-        UserCredential userCredential = await FirebaseAuth.instance.createUserWithEmailAndPassword(
-          email: _emailController.text.trim(),
-          password: _passwordController.text.trim(),
-        );
+        UserCredential userCredential = await FirebaseAuth.instance
+            .createUserWithEmailAndPassword(
+              email: _emailController.text.trim(),
+              password: _passwordController.text.trim(),
+            );
 
         String familyMemberId = userCredential.user!.uid;
 
         // Store family member data in Firestore
-        await FirebaseFirestore.instance.collection('users').doc(familyMemberId).set({
-          'name': _nameController.text.trim(),
-          'phone': _phoneController.text.trim(),
-          'email': _emailController.text.trim(),
-          'userType': 'family_member',
-          'pregnant_user': pregnantUserId,
-        });
+        await FirebaseFirestore.instance
+            .collection('users')
+            .doc(familyMemberId)
+            .set({
+              'name': _nameController.text.trim(),
+              'phone': _phoneController.text.trim(),
+              'email': _emailController.text.trim(),
+              'userType': 'family_member',
+              'pregnant_user': pregnantUserId,
+            });
 
         // Navigate to Dashboard
         Navigator.pushReplacementNamed(context, '/dashboard');
-
       } on FirebaseAuthException catch (e) {
         print("Auth Error: ${e.message}");
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Signup failed: ${e.message}")),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text("Signup failed: ${e.message}")));
       } catch (e) {
         print("Error: $e");
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Signup failed: $e")),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text("Signup failed: $e")));
       }
     }
   }
@@ -113,18 +117,18 @@ class _FamilySignupScreenState extends State<FamilySignupScreen> {
                 },
               ),
               TextFormField(
-                controller: _pregnantUsernameController,
-                decoration: InputDecoration(labelText: "Pregnant Woman's Username"),
+                controller: _pregnantEmailController,
+                decoration: InputDecoration(
+                  labelText: "Pregnant Woman's Email id",
+                ),
                 validator: (value) {
-                  if (value!.isEmpty) return "Please enter the pregnant woman's username";
+                  if (value!.isEmpty)
+                    return "Please enter the pregnant woman's email";
                   return null;
                 },
               ),
               SizedBox(height: 20),
-              ElevatedButton(
-                onPressed: _signUp,
-                child: Text("Sign Up"),
-              ),
+              ElevatedButton(onPressed: _signUp, child: Text("Sign Up")),
             ],
           ),
         ),

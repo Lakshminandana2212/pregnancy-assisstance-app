@@ -57,26 +57,44 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Future<void> _sendEmergencyAlert() async {
-    User? user = _auth.currentUser;
-    if (user == null) return;
+    try {
+      User? user = _auth.currentUser;
+      if (user == null) throw Exception('No user logged in');
 
-    DocumentSnapshot userDoc =
-        await _firestore.collection('users').doc(user.uid).get();
+      DocumentSnapshot userDoc =
+          await _firestore.collection('users').doc(user.uid).get();
 
-    if (userDoc.exists) {
-      String emergencyContact = userDoc['emergency_contact'];
+      if (!userDoc.exists) throw Exception('User data not found');
+
+      String emergencyContact = userDoc['emergency_contact'] ?? '';
+      if (emergencyContact.isEmpty)
+        throw Exception('No emergency contact found');
+
+      // Format phone number for WhatsApp
+      String formattedNumber = emergencyContact.replaceAll(
+        RegExp(r'[^0-9]'),
+        '',
+      );
+      if (!formattedNumber.startsWith('+')) {
+        formattedNumber = '+91$formattedNumber'; // Add country code for India
+      }
 
       showDialog(
         context: context,
         builder: (BuildContext context) {
           return AlertDialog(
-            title: Text('Emergency Contact'),
+            title: const Text('Emergency Contact'),
             content: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
                 ElevatedButton.icon(
-                  icon: Icon(Icons.phone),
-                  label: Text('Call Emergency Contact'),
+                  icon: const Icon(Icons.phone),
+                  label: const Text('Call Emergency Contact'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.red,
+                    foregroundColor: Colors.white,
+                    minimumSize: const Size(double.infinity, 45),
+                  ),
                   onPressed: () async {
                     final Uri phoneUri = Uri(
                       scheme: 'tel',
@@ -84,26 +102,90 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     );
                     if (await canLaunchUrl(phoneUri)) {
                       await launchUrl(phoneUri);
+                    } else {
+                      throw Exception('Could not launch phone call');
                     }
                   },
                 ),
-                SizedBox(height: 10),
+                const SizedBox(height: 16),
                 ElevatedButton.icon(
-                  icon: Icon(Icons.message),
-                  label: Text('Send WhatsApp Message'),
+                  icon: const Icon(Icons.message),
+                  label: const Text('Send WhatsApp Message'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.green,
+                    foregroundColor: Colors.white,
+                    minimumSize: const Size(double.infinity, 45),
+                  ),
                   onPressed: () async {
-                    final Uri whatsappUri = Uri.parse(
-                      'https://wa.me/${emergencyContact}?text=Emergency! I need help!',
-                    );
-                    if (await canLaunchUrl(whatsappUri)) {
-                      await launchUrl(whatsappUri);
+                    try {
+                      // Remove any non-numeric characters and spaces
+                      String cleanNumber = formattedNumber.replaceAll(
+                        RegExp(r'\D'),
+                        '',
+                      );
+
+                      // Ensure number starts with country code
+                      if (!cleanNumber.startsWith('91')) {
+                        cleanNumber = '91$cleanNumber';
+                      }
+
+                      final message = Uri.encodeComponent(
+                        'Emergency! I need immediate medical assistance. '
+                        'This is an automated emergency alert from my pregnancy care app.',
+                      );
+
+                      // Try mobile WhatsApp first
+                      final mobileUrl = Uri.parse(
+                        'whatsapp://send?phone=$cleanNumber&text=$message',
+                      );
+                      if (await canLaunchUrl(mobileUrl)) {
+                        await launchUrl(
+                          mobileUrl,
+                          mode: LaunchMode.externalApplication,
+                        );
+                      } else {
+                        // Fallback to web WhatsApp
+                        final webUrl = Uri.parse(
+                          'https://wa.me/$cleanNumber?text=$message',
+                        );
+                        if (await canLaunchUrl(webUrl)) {
+                          await launchUrl(
+                            webUrl,
+                            mode: LaunchMode.externalApplication,
+                          );
+                        } else {
+                          throw Exception('WhatsApp is not installed');
+                        }
+                      }
+                    } catch (e) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            'Failed to open WhatsApp: ${e.toString()}',
+                          ),
+                          backgroundColor: Colors.red,
+                        ),
+                      );
                     }
                   },
                 ),
               ],
             ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: const Text('Cancel'),
+              ),
+            ],
           );
         },
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error: ${e.toString()}'),
+          backgroundColor: Colors.red,
+        ),
       );
     }
   }

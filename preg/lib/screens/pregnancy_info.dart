@@ -4,14 +4,6 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 class PregnancyInfoScreen extends StatelessWidget {
   const PregnancyInfoScreen({super.key});
 
-  List<String> _sortWeeks(List<dynamic> weeks) {
-    return List<String>.from(weeks)..sort((a, b) {
-      int weekA = int.tryParse(a.toString().replaceAll('week ', '')) ?? 0;
-      int weekB = int.tryParse(b.toString().replaceAll('week ', '')) ?? 0;
-      return weekA.compareTo(weekB);
-    });
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -23,7 +15,7 @@ class PregnancyInfoScreen extends StatelessWidget {
         stream:
             FirebaseFirestore.instance
                 .collection('pregnancy_info')
-                .orderBy('week_number')
+                .orderBy('week')
                 .snapshots(),
         builder: (context, snapshot) {
           if (snapshot.hasError) {
@@ -36,18 +28,9 @@ class PregnancyInfoScreen extends StatelessWidget {
           }
 
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  CircularProgressIndicator(
-                    valueColor: AlwaysStoppedAnimation<Color>(
-                      Colors.pink[200]!,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  const Text('Loading pregnancy information...'),
-                ],
+            return const Center(
+              child: CircularProgressIndicator(
+                valueColor: AlwaysStoppedAnimation<Color>(Colors.pink),
               ),
             );
           }
@@ -59,9 +42,10 @@ class PregnancyInfoScreen extends StatelessWidget {
             itemCount: weeks.length,
             itemBuilder: (context, index) {
               final weekData = weeks[index].data() as Map<String, dynamic>;
-              final weekNumber = weekData['week_number']?.toString() ?? '';
-              final description = weekData['description'] ?? '';
-              final tips = weekData['tips'] as List<dynamic>? ?? [];
+              final weekNumber = weekData['week']?.toString() ?? '';
+              final info = weekData['info'] ?? '';
+              final message = weekData['message'] ?? '';
+              final tips = weekData['tips'] ?? '';
 
               return Card(
                 margin: const EdgeInsets.only(bottom: 16),
@@ -80,47 +64,57 @@ class PregnancyInfoScreen extends StatelessWidget {
                   ),
                   children: [
                     Padding(
-                      padding: const EdgeInsets.all(16.0),
+                      padding: const EdgeInsets.all(16),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
-                            'Development:',
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              color: Colors.pink[800],
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          Text(description),
-                          const SizedBox(height: 16),
-                          if (tips.isNotEmpty) ...[
+                          if (info.isNotEmpty) ...[
                             Text(
-                              'Tips for this week:',
+                              'Know your baby size!',
                               style: TextStyle(
                                 fontWeight: FontWeight.bold,
                                 color: Colors.pink[800],
+                                fontSize: 16,
                               ),
                             ),
                             const SizedBox(height: 8),
-                            ...tips
-                                .map(
-                                  (tip) => Padding(
-                                    padding: const EdgeInsets.only(bottom: 4),
-                                    child: Row(
-                                      children: [
-                                        const Icon(
-                                          Icons.check_circle,
-                                          color: Colors.green,
-                                          size: 20,
-                                        ),
-                                        const SizedBox(width: 8),
-                                        Expanded(child: Text(tip.toString())),
-                                      ],
-                                    ),
-                                  ),
-                                )
-                                .toList(),
+                            Text(info),
+                            const SizedBox(height: 16),
+                          ],
+                          if (message.isNotEmpty) ...[
+                            Text(
+                              'Oh look!Baby has something to say:',
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                color: Colors.pink[800],
+                                fontSize: 16,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(message),
+                            const SizedBox(height: 16),
+                          ],
+                          if (tips.isNotEmpty) ...[
+                            Text(
+                              'For Mommy:',
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                color: Colors.pink[800],
+                                fontSize: 16,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Row(
+                              children: [
+                                const Icon(
+                                  Icons.check_circle,
+                                  color: Colors.green,
+                                  size: 20,
+                                ),
+                                const SizedBox(width: 8),
+                                Expanded(child: Text(tips.toString())),
+                              ],
+                            ),
                           ],
                         ],
                       ),

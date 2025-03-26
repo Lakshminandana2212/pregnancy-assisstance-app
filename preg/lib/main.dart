@@ -27,7 +27,7 @@ void main() async {
 
 Future<void> populatePregnancyInfo() async {
   final FirebaseFirestore db = FirebaseFirestore.instance;
-  
+
   try {
     // Check if data already exists
     final snapshot = await db.collection('pregnancy_info').limit(1).get();
@@ -37,7 +37,7 @@ Future<void> populatePregnancyInfo() async {
     }
 
     final batch = db.batch();
-    
+
     for (int week = 1; week <= 40; week++) {
       final docRef = db.collection('pregnancy_info').doc('week_$week');
       batch.set(docRef, {
@@ -46,7 +46,7 @@ Future<void> populatePregnancyInfo() async {
         'tips': getWeekTips(week),
       });
     }
-    
+
     await batch.commit();
     print('Successfully populated pregnancy info');
   } catch (e) {
@@ -74,20 +74,16 @@ List<String> getWeekTips(int week) {
       return [
         'Start taking prenatal vitamins',
         'Quit smoking and avoid alcohol',
-        'Schedule your first prenatal appointment'
+        'Schedule your first prenatal appointment',
       ];
     case 2:
-      return [
-        'Maintain a healthy diet',
-        'Stay hydrated',
-        'Get plenty of rest'
-      ];
+      return ['Maintain a healthy diet', 'Stay hydrated', 'Get plenty of rest'];
     // Add more weeks...
     default:
       return [
         'Stay active with light exercise',
         'Keep taking prenatal vitamins',
-        'Stay in touch with your healthcare provider'
+        'Stay in touch with your healthcare provider',
       ];
   }
 }

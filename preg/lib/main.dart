@@ -10,6 +10,7 @@ import 'package:preg/screens/pregnancy_info.dart';
 import 'package:preg/screens/signup_decision.dart';
 import 'package:preg/screens/signup_family.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -20,7 +21,75 @@ void main() async {
   } catch (e) {
     print("Error loading .env: $e");
   }
+  await populatePregnancyInfo();
   runApp(MyApp());
+}
+
+Future<void> populatePregnancyInfo() async {
+  final FirebaseFirestore db = FirebaseFirestore.instance;
+  
+  try {
+    // Check if data already exists
+    final snapshot = await db.collection('pregnancy_info').limit(1).get();
+    if (snapshot.docs.isNotEmpty) {
+      print('Pregnancy info data already exists');
+      return;
+    }
+
+    final batch = db.batch();
+    
+    for (int week = 1; week <= 40; week++) {
+      final docRef = db.collection('pregnancy_info').doc('week_$week');
+      batch.set(docRef, {
+        'week_number': week,
+        'description': getWeekDescription(week),
+        'tips': getWeekTips(week),
+      });
+    }
+    
+    await batch.commit();
+    print('Successfully populated pregnancy info');
+  } catch (e) {
+    print('Error populating pregnancy info: $e');
+  }
+}
+
+String getWeekDescription(int week) {
+  // Add real descriptions for each week
+  switch (week) {
+    case 1:
+      return 'Your pregnancy journey begins! The fertilized egg implants in your uterus.';
+    case 2:
+      return 'Your baby is now called a blastocyst and is developing rapidly.';
+    // Add more weeks...
+    default:
+      return 'Week $week of your pregnancy journey.';
+  }
+}
+
+List<String> getWeekTips(int week) {
+  // Add real tips for each week
+  switch (week) {
+    case 1:
+      return [
+        'Start taking prenatal vitamins',
+        'Quit smoking and avoid alcohol',
+        'Schedule your first prenatal appointment'
+      ];
+    case 2:
+      return [
+        'Maintain a healthy diet',
+        'Stay hydrated',
+        'Get plenty of rest'
+      ];
+    // Add more weeks...
+    default:
+      return [
+        'Stay active with light exercise',
+        'Keep taking prenatal vitamins',
+        'Stay in touch with your healthcare provider'
+      ];
+  }
 }
 
 class MyApp extends StatelessWidget {

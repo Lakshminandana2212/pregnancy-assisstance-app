@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:google_generative_ai/google_generative_ai.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class ChatbotScreen extends StatefulWidget {
   @override
@@ -8,6 +7,8 @@ class ChatbotScreen extends StatefulWidget {
 }
 
 class _ChatbotScreenState extends State<ChatbotScreen> {
+  static const String GEMINI_API_KEY =
+      'AIzaSyCifVOv1JJ5kG_3FW9_I280lFdAhhI5QsM';
   final TextEditingController _messageController = TextEditingController();
   final List<Map<String, dynamic>> _messages = [];
   late ChatSession _chatSession;
@@ -29,19 +30,29 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
 
   void _initChat() {
     try {
-      final apiKey = dotenv.env['GEMINI_API_KEY'];
-      if (apiKey == null || apiKey.isEmpty) {
-        throw Exception('API key not found in environment variables');
-      }
+      final model = GenerativeModel(
+        model: 'gemini-2.0-flash',
+        apiKey: GEMINI_API_KEY,
+        generationConfig: GenerationConfig(
+          temperature: 0.7,
+          topK: 40,
+          topP: 0.95,
+          maxOutputTokens: 1024,
+        ),
+      );
 
-      final model = GenerativeModel(model: 'gemini-pro', apiKey: apiKey);
-      _chatSession = model.startChat();
-      _messages.add({
-        'sender': 'bot',
-        'message':
-            'Hello! I\'m your pregnancy care assistant. How can I help you today?',
+      _chatSession = model.startChat(history: []);
+
+      // Add initial message
+      setState(() {
+        _messages.add({
+          'sender': 'bot',
+          'message':
+              'Hello! I\'m your pregnancy care assistant. I can help you with pregnancy-related questions and concerns. How may I assist you today?',
+        });
       });
     } catch (e) {
+      print('Error initializing chat: $e');
       _handleError('Failed to initialize chat: ${e.toString()}');
     }
   }
@@ -69,7 +80,11 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
     _focusNode.requestFocus();
 
     try {
-      final response = await _chatSession.sendMessage(Content.text(text));
+      final prompt = '''You are a knowledgeable pregnancy care assistant. 
+      Provide accurate, helpful, and compassionate responses to pregnancy-related questions.
+      Current question: $text''';
+
+      final response = await _chatSession.sendMessage(Content.text(prompt));
       if (response.text == null || response.text!.isEmpty) {
         throw Exception('Empty response received');
       }

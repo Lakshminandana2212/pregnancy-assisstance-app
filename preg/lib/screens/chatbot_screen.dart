@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:google_generative_ai/google_generative_ai.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class ChatbotScreen extends StatefulWidget {
   @override
@@ -8,100 +9,139 @@ class ChatbotScreen extends StatefulWidget {
 
 class _ChatbotScreenState extends State<ChatbotScreen> {
   final TextEditingController _messageController = TextEditingController();
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  final List<Map<String, String>> _messages = [];
+  final List<Map<String, dynamic>> _messages = [];
+  late ChatSession _chatSession;
+  bool _isLoading = false;
+  final FocusNode _focusNode = FocusNode();
 
-  void _sendMessage() async {
-    String userMessage = _messageController.text.trim();
-    if (userMessage.isEmpty) return;
+  @override
+  void initState() {
+    super.initState();
+    _initChat();
+  }
 
+  @override
+  void dispose() {
+    _messageController.dispose();
+    _focusNode.dispose();
+    super.dispose();
+  }
+
+  void _initChat() {
+    try {
+      final apiKey = dotenv.env['GEMINI_API_KEY'];
+      if (apiKey == null || apiKey.isEmpty) {
+        throw Exception('API key not found in environment variables');
+      }
+
+      final model = GenerativeModel(model: 'gemini-pro', apiKey: apiKey);
+      _chatSession = model.startChat();
+      _messages.add({
+        'sender': 'bot',
+        'message':
+            'Hello! I\'m your pregnancy care assistant. How can I help you today?',
+      });
+    } catch (e) {
+      _handleError('Failed to initialize chat: ${e.toString()}');
+    }
+  }
+
+  void _handleError(String errorMessage) {
     setState(() {
-      _messages.add({'sender': 'user', 'message': userMessage});
-    });
-
-    _messageController.clear();
-
-    // Fetch chatbot response
-    String botResponse = await _fetchChatbotResponse(userMessage);
-
-    setState(() {
-      _messages.add({'sender': 'bot', 'message': botResponse});
+      _messages.add({
+        'sender': 'system',
+        'message': errorMessage,
+        'isError': true,
+      });
+      _isLoading = false;
     });
   }
 
-  Future<String> _fetchChatbotResponse(String userMessage) async {
+  Future<void> _sendMessage() async {
+    final text = _messageController.text.trim();
+    if (text.isEmpty) return;
+
+    setState(() {
+      _messages.add({'sender': 'user', 'message': text});
+      _isLoading = true;
+    });
+    _messageController.clear();
+    _focusNode.requestFocus();
+
     try {
-      QuerySnapshot querySnapshot =
-          await _firestore.collection('chatbot_responses').get();
-
-      for (var doc in querySnapshot.docs) {
-        List<dynamic> queries = doc['query'];
-        List<dynamic> responses = doc['response'];
-
-        for (int i = 0; i < queries.length; i++) {
-          if (userMessage.toLowerCase().contains(queries[i].toLowerCase())) {
-            return responses[i];
-          }
-        }
+      final response = await _chatSession.sendMessage(Content.text(text));
+      if (response.text == null || response.text!.isEmpty) {
+        throw Exception('Empty response received');
       }
-      return "I'm not sure about that. Please consult a doctor.";
+      setState(() {
+        _messages.add({'sender': 'bot', 'message': response.text!});
+      });
     } catch (e) {
-      return "Error fetching response. Please try again.";
+      _handleError('Error: ${e.toString()}');
+    } finally {
+      setState(() => _isLoading = false);
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('PregnaCare Chatbot')),
+      appBar: AppBar(
+        title: Text('Pregnancy Care Chatbot'),
+        backgroundColor: Colors.pink[200],
+      ),
       body: Column(
         children: [
           Expanded(
             child: ListView.builder(
+              padding: EdgeInsets.all(12),
               itemCount: _messages.length,
               itemBuilder: (context, index) {
-                final message = _messages[index];
-                bool isUser = message['sender'] == 'user';
+                final msg = _messages[index];
                 return Align(
                   alignment:
-                      isUser ? Alignment.centerRight : Alignment.centerLeft,
+                      msg['sender'] == 'user'
+                          ? Alignment.centerRight
+                          : Alignment.centerLeft,
                   child: Container(
-                    margin: EdgeInsets.symmetric(
-                      vertical: 5.0,
-                      horizontal: 10.0,
-                    ),
-                    padding: EdgeInsets.all(10.0),
+                    margin: EdgeInsets.symmetric(vertical: 4),
+                    padding: EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: isUser ? Colors.pink[200] : Colors.grey[300],
-                      borderRadius: BorderRadius.circular(10),
+                      color:
+                          msg['isError'] == true
+                              ? Colors.red[100]
+                              : msg['sender'] == 'user'
+                              ? Colors.pink[100]
+                              : Colors.grey[200],
+                      borderRadius: BorderRadius.circular(12),
                     ),
-                    child: Text(
-                      message['message']!,
-                      style: TextStyle(fontSize: 16),
-                    ),
+                    child: Text(msg['message']),
                   ),
                 );
               },
             ),
           ),
+          if (_isLoading)
+            Padding(
+              padding: EdgeInsets.all(8),
+              child: CircularProgressIndicator(),
+            ),
           Padding(
-            padding: const EdgeInsets.all(8.0),
+            padding: EdgeInsets.all(8),
             child: Row(
               children: [
                 Expanded(
                   child: TextField(
                     controller: _messageController,
+                    focusNode: _focusNode,
                     decoration: InputDecoration(
-                      hintText: 'Ask something...',
+                      hintText: 'Ask about pregnancy...',
                       border: OutlineInputBorder(),
                     ),
+                    onSubmitted: (_) => _sendMessage(),
                   ),
                 ),
-                SizedBox(width: 8),
-                IconButton(
-                  icon: Icon(Icons.send, color: Colors.pink),
-                  onPressed: _sendMessage,
-                ),
+                IconButton(icon: Icon(Icons.send), onPressed: _sendMessage),
               ],
             ),
           ),

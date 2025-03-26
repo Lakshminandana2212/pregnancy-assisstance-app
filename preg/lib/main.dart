@@ -9,11 +9,17 @@ import 'package:preg/screens/doctors.dart';
 import 'package:preg/screens/pregnancy_info.dart';
 import 'package:preg/screens/signup_decision.dart';
 import 'package:preg/screens/signup_family.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp();
-
+  try {
+    await dotenv.load(fileName: "assets/.env");
+    print("API Key loaded: ${dotenv.env['GEMINI_API_KEY']}");
+  } catch (e) {
+    print("Error loading .env: $e");
+  }
   runApp(MyApp());
 }
 
@@ -31,8 +37,8 @@ class MyApp extends StatelessWidget {
         '/login': (context) => LoginScreen(),
         '/chatbot': (context) => ChatbotScreen(),
         '/doctors': (context) => DoctorListScreen(),
-        '/signup_decision' : (context) => SignupDecisionScreen(),
-         '/signup_family' : (context) => FamilySignupScreen(),
+        '/signup_decision': (context) => SignupDecisionScreen(),
+        '/signup_family': (context) => FamilySignupScreen(),
         '/pregnancy_info': (context) => PregnancyInfoScreen(),
       },
     );

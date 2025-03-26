@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:preg/screens/doctors.dart';
 import 'package:preg/screens/pregnancy_info.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -59,20 +60,59 @@ class _DashboardScreenState extends State<DashboardScreen> {
     User? user = _auth.currentUser;
     if (user == null) return;
 
-    QuerySnapshot familyMembers = await _firestore
-        .collection('users')
-        .where('userType', isEqualTo: 'family_member')
-        .where('linkedEmail', isEqualTo: user.email)
-        .get();
+    DocumentSnapshot userDoc =
+        await _firestore.collection('users').doc(user.uid).get();
 
-    for (var doc in familyMembers.docs) {
-      print("Sending alert to: ${doc['email']}");
+    if (userDoc.exists) {
+      String emergencyContact = userDoc['emergency_contact'];
+
+      showDialog(
+        context: context,
+        builder: (BuildContext context) {
+          return AlertDialog(
+            title: Text('Emergency Contact'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                ElevatedButton.icon(
+                  icon: Icon(Icons.phone),
+                  label: Text('Call Emergency Contact'),
+                  onPressed: () async {
+                    final Uri phoneUri = Uri(
+                      scheme: 'tel',
+                      path: emergencyContact,
+                    );
+                    if (await canLaunchUrl(phoneUri)) {
+                      await launchUrl(phoneUri);
+                    }
+                  },
+                ),
+                SizedBox(height: 10),
+                ElevatedButton.icon(
+                  icon: Icon(Icons.message),
+                  label: Text('Send WhatsApp Message'),
+                  onPressed: () async {
+                    final Uri whatsappUri = Uri.parse(
+                      'https://wa.me/${emergencyContact}?text=Emergency! I need help!',
+                    );
+                    if (await canLaunchUrl(whatsappUri)) {
+                      await launchUrl(whatsappUri);
+                    }
+                  },
+                ),
+              ],
+            ),
+          );
+        },
+      );
     }
   }
 
   void _navigateToDoctorList() {
     Navigator.push(
-        context, MaterialPageRoute(builder: (context) => DoctorListScreen()));
+      context,
+      MaterialPageRoute(builder: (context) => DoctorListScreen()),
+    );
   }
 
   void _navigateToChatbot() {
@@ -81,7 +121,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   void _navigateToPregnancyInfo() {
     Navigator.push(
-        context, MaterialPageRoute(builder: (context) => PregnancyInfoScreen()));
+      context,
+      MaterialPageRoute(builder: (context) => PregnancyInfoScreen()),
+    );
   }
 
   @override
@@ -94,23 +136,32 @@ class _DashboardScreenState extends State<DashboardScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             if (_userType == 'pregnant_woman') ...[
-              Text("You are $_weeksPregnant weeks pregnant",
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-              Text("Due Date: ${_dueDate?.toLocal().toString().split(' ')[0]}",
-                  style: TextStyle(fontSize: 16)),
+              Text(
+                "You are $_weeksPregnant weeks pregnant",
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+              Text(
+                "Due Date: ${_dueDate?.toLocal().toString().split(' ')[0]}",
+                style: TextStyle(fontSize: 16),
+              ),
               SizedBox(height: 20),
             ],
             ElevatedButton(
-                onPressed: _sendEmergencyAlert, child: Text("Emergency Alert")),
+              onPressed: _sendEmergencyAlert,
+              child: Text("Emergency Alert"),
+            ),
             ElevatedButton(
-                onPressed: _navigateToDoctorList,
-                child: Text("Online Doctor Consultation")),
+              onPressed: _navigateToDoctorList,
+              child: Text("Online Doctor Consultation"),
+            ),
             ElevatedButton(
-                onPressed: _navigateToChatbot,
-                child: Text("Symptom Tracker & Chatbot")),
+              onPressed: _navigateToChatbot,
+              child: Text("Symptom Tracker & Chatbot"),
+            ),
             ElevatedButton(
-                onPressed: _navigateToPregnancyInfo,
-                child: Text("Know Your Due Date & Info")),
+              onPressed: _navigateToPregnancyInfo,
+              child: Text("Know Your Due Date & Info"),
+            ),
           ],
         ),
       ),

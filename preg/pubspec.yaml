@@ -30,7 +30,7 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  # url_launcher: ^6.1.7   
+  url_launcher: ^6.1.7   
   firebase_core: ^3.12.1
   firebase_auth: ^5.5.1
   cloud_firestore: ^5.6.5
@@ -41,11 +41,17 @@ dependencies:
   intl: ^0.20.2
   firebase_analytics: ^11.4.4
   speech_to_text: ^7.0.0
-  
-
+  google_generative_ai: ^0.4.6
+  http: ^1.1.0
+  flutter_dotenv: ^5.1.0
+  googleapis: ^12.0.0
+  googleapis_auth: ^1.4.1 
+  cupertino_icons: ^1.0.6
+  functions_framework: ^0.4.0
+  shelf: ^1.4.1
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
-  cupertino_icons: ^1.0.8
+  
 
 dev_dependencies:
   flutter_test:
@@ -63,6 +69,10 @@ dev_dependencies:
 
 # The following section is specific to Flutter packages.
 flutter:
+  assets:
+    - assets/.env
+    
+
 
   # The following line ensures that the Material Icons font is
   # included with your application, so that you can use the icons in

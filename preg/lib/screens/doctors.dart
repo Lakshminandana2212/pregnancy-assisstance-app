@@ -1,8 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class DoctorListScreen extends StatelessWidget {
   const DoctorListScreen({super.key});
+
+  Future<void> _makePhoneCall(String phoneNumber) async {
+    final Uri phoneUri = Uri(scheme: 'tel', path: phoneNumber);
+    if (await canLaunchUrl(phoneUri)) {
+      await launchUrl(phoneUri);
+    } else {
+      throw 'Could not launch $phoneUri';
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -12,10 +22,11 @@ class DoctorListScreen extends StatelessWidget {
         backgroundColor: Colors.blueAccent, // Stylish app bar color
       ),
       body: StreamBuilder<DocumentSnapshot>(
-        stream: FirebaseFirestore.instance
-            .collection('consultations')
-            .doc('Online Medical Consultations')
-            .snapshots(),
+        stream:
+            FirebaseFirestore.instance
+                .collection('consultations')
+                .doc('Online Medical Consultations')
+                .snapshots(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
@@ -33,7 +44,10 @@ class DoctorListScreen extends StatelessWidget {
           List<dynamic>? contacts = data['doctor_contact'] as List<dynamic>?;
 
           // Check if lists are null or empty
-          if (names == null || emails == null || contacts == null || names.isEmpty) {
+          if (names == null ||
+              emails == null ||
+              contacts == null ||
+              names.isEmpty) {
             return const Center(child: Text("No doctors found."));
           }
 
@@ -52,9 +66,7 @@ class DoctorListScreen extends StatelessWidget {
                   subtitle: Text("${emails[index]} | ${contacts[index]}"),
                   trailing: IconButton(
                     icon: const Icon(Icons.call, color: Colors.green),
-                    onPressed: () {
-                      // Implement calling feature if needed
-                    },
+                    onPressed: () => _makePhoneCall(contacts[index].toString()),
                   ),
                 ),
               );

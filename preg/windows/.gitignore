@@ -5,7 +5,9 @@ flutter/ephemeral/
 *.user
 *.userosscache
 *.sln.docstates
-
+# .gitignore
+.env
+*.env
 # Visual Studio build-related files.
 x64/
 x86/

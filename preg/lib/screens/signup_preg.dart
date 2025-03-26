@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class SignupScreen extends StatefulWidget {
   const SignupScreen({super.key});
@@ -14,6 +15,7 @@ class _SignupScreenState extends State<SignupScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _phoneController = TextEditingController();
+  final _emergencyContactController = TextEditingController();
   final _lastPeriodDateController = TextEditingController();
   String _userType = 'pregnant_woman'; // Default selection
 
@@ -25,7 +27,9 @@ class _SignupScreenState extends State<SignupScreen> {
         int? weeksPregnant;
 
         if (_userType == 'pregnant_woman') {
-          lastPeriodDate = DateTime.parse(_lastPeriodDateController.text.trim());
+          lastPeriodDate = DateTime.parse(
+            _lastPeriodDateController.text.trim(),
+          );
           dueDate = lastPeriodDate.add(Duration(days: 280)); // 40 weeks
           weeksPregnant = DateTime.now().difference(lastPeriodDate).inDays ~/ 7;
         }
@@ -44,6 +48,7 @@ class _SignupScreenState extends State<SignupScreen> {
               'phone': _phoneController.text.trim(),
               'userType': _userType,
               'username': _emailController.text.trim().split('@')[0],
+              'emergency_contact': _emergencyContactController.text.trim(),
               if (_userType == 'pregnant_woman') ...{
                 'last_period_date': Timestamp.fromDate(lastPeriodDate!),
                 'due_date': Timestamp.fromDate(dueDate!),
@@ -53,9 +58,9 @@ class _SignupScreenState extends State<SignupScreen> {
 
         Navigator.pushReplacementNamed(context, '/dashboard');
       } on FirebaseAuthException catch (e) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Signup failed: ${e.message}")),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text("Signup failed: ${e.message}")));
       } on FormatException {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text("Invalid date format. Use YYYY-MM-DD")),
@@ -118,12 +123,24 @@ class _SignupScreenState extends State<SignupScreen> {
                   return null;
                 },
               ),
+              TextFormField(
+                controller: _emergencyContactController,
+                decoration: InputDecoration(labelText: "Emergency Contact"),
+                validator: (value) {
+                  if (value!.isEmpty)
+                    return "Please enter your emergency contact";
+                  return null;
+                },
+              ),
               if (_userType == 'pregnant_woman') // Show only for pregnant women
                 TextFormField(
                   controller: _lastPeriodDateController,
-                  decoration: InputDecoration(labelText: "Last Period Date (YYYY-MM-DD)"),
+                  decoration: InputDecoration(
+                    labelText: "Last Period Date (YYYY-MM-DD)",
+                  ),
                   validator: (value) {
-                    if (_userType == 'pregnant_woman' && (value == null || value.isEmpty)) {
+                    if (_userType == 'pregnant_woman' &&
+                        (value == null || value.isEmpty)) {
                       return "Please enter your last period date";
                     }
                     try {

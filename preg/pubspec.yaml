@@ -76,7 +76,7 @@ flutter:
   - assets/images/family.png
   - assets/images/dashboard_bg.png
   - assets/images/doc_bg.png
-  - assets/images/chatbot.png
+  - assets/images/chatbot_bg.png
   - assets/images/info.png
   # The following line ensures that the Material Icons font is
   # included with your application, so that you can use the icons in

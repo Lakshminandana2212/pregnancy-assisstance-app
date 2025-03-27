@@ -251,7 +251,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 }*/
 
-
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -477,36 +476,45 @@ class _DashboardScreenState extends State<DashboardScreen> {
         child: SafeArea(
           child: Stack(
             children: [
-              // Pregnancy Info at Right Top-Middle
+              // Centered Pregnancy Info
               if (_userType == 'pregnant_woman')
                 Positioned(
-                  right: 16,
-                  top: MediaQuery.of(context).size.height * 0.1,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      Text(
-                        "You are\n$_weeksPregnant weeks\npregnant",
-                        textAlign: TextAlign.right,
-                        style: TextStyle(
-                          fontSize: 28, 
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                          height: 1.2,
-                        ),
-                      ),
-                      SizedBox(height: 10),
-                      if (_dueDate != null)
-                        Text(
-                          "Due Date:\n${_dueDate?.toLocal().toString().split(' ')[0]}",
-                          textAlign: TextAlign.right,
-                          style: TextStyle(
-                            fontSize: 22,
-                            color: Colors.white,
-                            height: 1.2,
+                  top: MediaQuery.of(context).size.height * 0.45, // Reduced from 0.35 to add more padding
+                  left: 0,
+                  right: 0,
+                  child: Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                          child: Text(
+                            "You are $_weeksPregnant weeks pregnant",
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 20, 
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                              height: 1.2,
+                            ),
                           ),
                         ),
-                    ],
+                        SizedBox(height: 10),
+                        if (_dueDate != null)
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                            child: Text(
+                              "Your due date is ${_dueDate?.toLocal().toString().split(' ')[0]}",
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                fontSize: 16,
+                                color: Colors.white,
+                                height: 1.2,
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
                   ),
                 ),
 

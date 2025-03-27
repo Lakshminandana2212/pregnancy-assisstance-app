@@ -539,7 +539,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       ),
                       SizedBox(height: 16),
                       _buildTransparentButton(
-                        'Your Due Date & Info', 
+                        'More Info', 
                         _navigateToPregnancyInfo,
                       ),
                       SizedBox(height: 20),
